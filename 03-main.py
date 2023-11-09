@@ -69,8 +69,8 @@ writer = SummaryWriter(os.path.join('./log',str(fold)))
 
 ################## Define Dataloader ##################################
 
-torch.multiprocessing.freeze_support()
 dataset = ABIDEDataset(path,name)
+
 dataset.data.y = dataset.data.y.squeeze()
 dataset.data.x[dataset.data.x == float('inf')] = 0
 
@@ -87,7 +87,7 @@ test_loader = DataLoader(test_dataset, batch_size=opt.batchSize, shuffle=False)
 
 
 ############### Define Graph Deep Learning Network ##########################
-print("yes")
+
 model = GNN(opt.indim,opt.ratio,opt.nclass).to(device)
 print(model)
 

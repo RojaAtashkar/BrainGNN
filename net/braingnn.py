@@ -1,51 +1,55 @@
 import torch
-import torch_geometric
-from torch_geometric.nn import TopKPooling, GCNConv
-from torch_geometric.nn import global_mean_pool as gap, global_max_pool as gmp
-import torch.nn as nn
 import torch.nn.functional as F
+import torch.nn as nn
+from torch_geometric.nn import TopKPooling
+from torch_geometric.nn import global_mean_pool as gap, global_max_pool as gmp
+from torch_geometric.utils import (add_self_loops, sort_edge_index,
+                                   remove_self_loops)
 from torch_sparse import spspmm
 
+from net.braingraphconv import MyNNConv
 
-from torch_geometric.utils import add_self_loops, sort_edge_index, remove_self_loops
 
-
-class GNN(torch.nn.Module):
-     def __init__(self, node_feature_dim, ratio, num_class, num_com=8, num_ROI=200):
+##########################################################################################################################
+class Network(torch.nn.Module):
+    def __init__(self, indim, ratio, nclass, k=8, R=200):
         '''
 
-        :param node_feature_dim: (int) node feature dimension
+        :param indim: (int) node feature dimension
         :param ratio: (float) pooling ratio in (0,1)
-        :param num_class: (int)  number of classes
-        :param num_com: (int) number of communities
-        :param num_ROI: (int) number of ROIs
+        :param nclass: (int)  number of classes
+        :param k: (int) number of communities
+        :param R: (int) number of ROIs
         '''
-        super(GNN, self).__init__()
+        super(Network, self).__init__()
 
-        self.node_feature_dim = node_feature_dim
+        self.indim = indim
         self.dim1 = 32
         self.dim2 = 32
         self.dim3 = 512
         self.dim4 = 256
         self.dim5 = 8
-        self.num_com = num_com
-        self.num_ROI = num_ROI
+        self.k = k
+        self.R = R
 
-
-        self.n1 = nn.Sequential(nn.Linear(self.num_ROI, self.num_com, bias=False), nn.ReLU(), nn.Linear(self.num_com, self.dim1 * self.node_feature_dim))
-        self.conv1 = GCNConv(self.node_feature_dim, self.dim1, normalize=False, bias=True)
+        self.n1 = nn.Sequential(nn.Linear(self.R, self.k, bias=False), nn.ReLU(), nn.Linear(self.k, self.dim1 * self.indim))
+        self.conv1 = MyNNConv(self.indim, self.dim1, self.n1, normalize=False)
         self.pool1 = TopKPooling(self.dim1, ratio=ratio, multiplier=1, nonlinearity=torch.sigmoid)
-        self.n2 = nn.Sequential(nn.Linear(self.num_ROI, self.num_com, bias=False), nn.ReLU(), nn.Linear(self.num_com, self.dim2 * self.dim1))
-        self.conv2 = GCNConv(self.dim1, self.dim2, normalize=False, bias=True)
+        self.n2 = nn.Sequential(nn.Linear(self.R, self.k, bias=False), nn.ReLU(), nn.Linear(self.k, self.dim2 * self.dim1))
+        self.conv2 = MyNNConv(self.dim1, self.dim2, self.n2, normalize=False)
         self.pool2 = TopKPooling(self.dim2, ratio=ratio, multiplier=1, nonlinearity=torch.sigmoid)
 
+        #self.fc1 = torch.nn.Linear((self.dim2) * 2, self.dim2)
         self.fc1 = torch.nn.Linear((self.dim1+self.dim2)*2, self.dim2)
         self.bn1 = torch.nn.BatchNorm1d(self.dim2)
         self.fc2 = torch.nn.Linear(self.dim2, self.dim3)
         self.bn2 = torch.nn.BatchNorm1d(self.dim3)
-        self.fc3 = torch.nn.Linear(self.dim3, num_class)
+        self.fc3 = torch.nn.Linear(self.dim3, nclass)
 
-     def forward(self, x, edge_index, batch, edge_attr, pos):
+
+
+
+    def forward(self, x, edge_index, batch, edge_attr, pos):
 
         x = self.conv1(x, edge_index, edge_attr, pos)
         x, edge_index, edge_attr, batch, perm, score1 = self.pool1(x, edge_index, edge_attr, batch)
@@ -69,7 +73,8 @@ class GNN(torch.nn.Module):
         x = F.log_softmax(self.fc3(x), dim=-1)
 
         return x,self.pool1.weight,self.pool2.weight, torch.sigmoid(score1).view(x.size(0),-1), torch.sigmoid(score2).view(x.size(0),-1)
-     def augment_adj(self, edge_index, edge_weight, num_nodes):
+
+    def augment_adj(self, edge_index, edge_weight, num_nodes):
         edge_index, edge_weight = add_self_loops(edge_index, edge_weight,
                                                  num_nodes=num_nodes)
         edge_index, edge_weight = sort_edge_index(edge_index, edge_weight,
@@ -79,3 +84,4 @@ class GNN(torch.nn.Module):
                                          num_nodes)
         edge_index, edge_weight = remove_self_loops(edge_index, edge_weight)
         return edge_index, edge_weight
+
