@@ -17,7 +17,7 @@ if __name__ == '__main__':
     from Model.GNN import GNN
     from imports_data.utils import train_val_test_split
     from sklearn.metrics import classification_report, confusion_matrix
-    from net import  braingnn
+    from net import braingnn
 
     torch.manual_seed(123)
 
@@ -77,14 +77,13 @@ if __name__ == '__main__':
 
     train_dataset = [dataset[i] for i in tr_index]
     val_dataset = [dataset[i] for i in val_index]
-    test_dataset =  [dataset[i] for i in te_index]
+    test_dataset = [dataset[i] for i in te_index]
 
     train_loader = DataLoader(train_dataset, batch_size=opt.batchSize, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=opt.batchSize, shuffle=False)
     test_loader = DataLoader(test_dataset, batch_size=opt.batchSize, shuffle=False)
 
     model = braingnn.Network(opt.indim, opt.ratio, opt.nclass).to(device)
-    print(model)
 
     if opt_method == 'Adam':
         optimizer = torch.optim.Adam(model.parameters(), lr=opt.lr, weight_decay=opt.weightdecay)
@@ -94,9 +93,8 @@ if __name__ == '__main__':
 
     scheduler = lr_scheduler.StepLR(optimizer, step_size=opt.stepsize, gamma=opt.gamma)
 
-    ############################### Define Other Loss Functions ########################################
-    print("yes2")
 
+    ############################### Define Other Loss Functions ########################################
 
     def topk_loss(s, ratio):
         if ratio > 0.5:
@@ -209,7 +207,7 @@ if __name__ == '__main__':
     best_loss = 1e10
     for epoch in range(0, num_epoch):
         since = time.time()
-        tr_loss, s1_arr, s2_arr, w1, w2 = train(epoch)
+        tr_loss, s1_arr, s2_arr = train(epoch)
         tr_acc = test_acc(train_loader)
         val_acc = test_acc(val_loader)
         val_loss = test_loss(val_loader, epoch)
@@ -262,4 +260,3 @@ if __name__ == '__main__':
         print("===========================")
         print("Test Acc: {:.7f}, Test Loss: {:.7f} ".format(test_accuracy, test_l))
         print(opt)
-
