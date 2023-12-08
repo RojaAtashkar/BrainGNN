@@ -29,7 +29,6 @@ def train_val_test_split(kfold = 5, fold = 0):
         tr_id, val_id = list(kf2.split(tr))[0]
         train_index.append(tr[tr_id])
         val_index.append(tr[val_id])
-
     train_id = train_index[fold]
     test_id = test_index[fold]
     val_id = val_index[fold]

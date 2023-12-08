@@ -1,8 +1,0 @@
-torch==2.1.1
-torch-cluster==2.1.1
-torch-geometric==2.0.0
-torch-scatter==2.0.6
-torch-sparse==0.6.9
-torch-spline-conv==1.2.1
-torchaudio==0.7.0a0+ac17b64
-torchvision==0.8.0

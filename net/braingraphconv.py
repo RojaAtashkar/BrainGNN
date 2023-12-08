@@ -18,7 +18,6 @@ class MyNNConv(MyMessagePassing):
         self.out_channels = out_channels
         self.normalize = normalize
         self.nn = nn
-        #self.weight = Parameter(torch.Tensor(self.in_channels, out_channels))
 
         if bias:
             self.bias = Parameter(torch.Tensor(out_channels))
@@ -28,7 +27,7 @@ class MyNNConv(MyMessagePassing):
         self.reset_parameters()
 
     def reset_parameters(self):
-#        uniform(self.in_channels, self.weight)
+
         uniform(self.in_channels, self.bias)
 
     def forward(self, x, edge_index, edge_weight=None, pseudo= None, size=None):
@@ -45,12 +44,6 @@ class MyNNConv(MyMessagePassing):
             x = (None if x[0] is None else torch.matmul(x[0].unsqueeze(1), weight).squeeze(1),
                  None if x[1] is None else torch.matmul(x[1].unsqueeze(1), weight).squeeze(1))
 
-        # weight = self.nn(pseudo).view(-1, self.out_channels,self.in_channels)
-        # if torch.is_tensor(x):
-        #     x = torch.matmul(x.unsqueeze(1), weight.permute(0,2,1)).squeeze(1)
-        # else:
-        #     x = (None if x[0] is None else torch.matmul(x[0].unsqueeze(1), weight).squeeze(1),
-        #          None if x[1] is None else torch.matmul(x[1].unsqueeze(1), weight).squeeze(1))
 
         return self.propagate(edge_index, size=size, x=x,
                               edge_weight=edge_weight)
