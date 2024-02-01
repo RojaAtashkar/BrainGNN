@@ -7,7 +7,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import KFold
 
 
-def train_val_test_split(kfold = 5, fold = 0):
+def train_val_test_split(kfold =3 , fold = 0):
     n_sub = 1035
     id = list(range(n_sub))
 
